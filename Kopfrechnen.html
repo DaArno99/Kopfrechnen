@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kopfrechnen — DSGVO-freundlich</title>
+  <meta name="description" content="Kopfrechnen: 20 Aufgaben, sofortiges Feedback, Zusammenfassung. Läuft komplett im Browser (keine Speicherung)." />
+
+  <!--
+    Schritt-für-Schritt: Diese einzelne Datei enthält HTML, CSS und JavaScript.
+    So benutzt du sie:
+      1) Speichern als 'kopfrechnen.html' auf deinem Rechner.
+      2) Datei im Browser öffnen (Doppelklick oder Rechtsklick -> Öffnen mit Browser).
+      3) Die Seite läuft vollständig lokal — es werden keine personenbezogenen Daten gesendet.
+
+    Hinweise zur DSGVO:
+      - Keine Anmeldung, keine Serveranfragen, kein Tracking.
+      - Wenn du die Seite auf einem Webserver veröffentlichst, achte darauf, Server-Logs
+        nicht länger als nötig aufzubewahren oder zu anonymisieren.
+  -->
+
+  <style>
+    :root{
+      --bg: #f7fafc; --card:#ffffff; --accent:#2563eb; --ok:#16a34a; --err:#dc2626; --muted:#6b7280;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:#0f172a;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+    .container{max-width:860px;width:100%}
+    header{display:flex;gap:16px;align-items:center;margin-bottom:18px}
+    h1{font-size:1.4rem;margin:0}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06);padding:18px}
+
+    .controls{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+    label{font-size:0.9rem}
+    select, button{padding:8px 10px;border-radius:8px;border:1px solid #e6e9ef;background:white}
+    button.primary{background:var(--accent);color:white;border:0}
+
+    .exercise{margin-top:16px}
+    .taskline{font-size:1.2rem;margin-bottom:10px}
+    input[type=number]{padding:8px 10px;border-radius:8px;border:1px solid #e6e9ef;width:120px}
+
+    .feedback{margin-top:8px;font-weight:600}
+    .feedback.ok{color:var(--ok)}
+    .feedback.err{color:var(--err)}
+
+    .summary{display:flex;gap:20px;align-items:center;margin-top:16px}
+    canvas{background:#fff;border-radius:8px;padding:8px}
+
+    footer{margin-top:18px;font-size:0.85rem;color:var(--muted)}
+
+    @media (max-width:640px){
+      .summary{flex-direction:column;align-items:flex-start}
+      input[type=number]{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <div>
+        <h1>Kopfrechnen — 20 Aufgaben (DSGVO-freundlich)</h1>
+        <div style="color:var(--muted);font-size:0.95rem">Keine Anmeldung. Alles läuft lokal im Browser.</div>
+      </div>
+    </header>
+
+    <section class="card">
+      <!-- Auswahlbereich -->
+      <div class="controls">
+        <div>
+          <label for="op">Operation</label><br>
+          <select id="op" aria-label="Operation wählen">
+            <option value="all">Alles (gemischt)</option>
+            <option value="+">Addition (+)</option>
+            <option value="-">Subtraktion (-)</option>
+            <option value="*">Multiplikation (×)</option>
+            <option value="/">Division (÷)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="range">Zahlenraum</label><br>
+          <select id="range" aria-label="Zahlenraum wählen">
+            <option value="100">bis 100</option>
+            <option value="1000">bis 1000</option>
+            <option value="10000">bis 10000</option>
+          </select>
+        </div>
+
+        <div style="display:flex;align-items:end;gap:8px">
+          <button id="startBtn" class="primary">Test starten</button>
+          <button id="restartBtn">Neu</button>
+        </div>
+
+        <div style="margin-left:auto;color:var(--muted);align-self:center">Aufgaben: <strong>20</strong></div>
+      </div>
+
+      <!-- Bereich für die aktuelle Aufgabe -->
+      <div id="exercise" class="exercise" aria-live="polite"></div>
+
+      <!-- Zusammenfassung -->
+      <div id="summaryArea"></div>
+
+      <footer>
+        Tipp: Schüler können die Seite lokal öffnen oder du stellst die Datei auf eurem Schul-Webserver ohne Tracking bereit.
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    // ---------------------------
+    // Grundkonfiguration
+    // ---------------------------
+    const TOTAL = 20; // Anzahl Aufgaben
+
+    // state
+    let tasks = [];
+    let current = 0;
+    let correctCount = 0;
+
+    // DOM
+    const opEl = document.getElementById('op');
+    const rangeEl = document.getElementById('range');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const exerciseEl = document.getElementById('exercise');
+    const summaryArea = document.getElementById('summaryArea');
+
+    // Hilfsfunktion: zufällige Ganzzahl 0..(n-1)
+    function randInt(n){ return Math.floor(Math.random()*n); }
+
+    // Erzeuge eine Aufgabe. Für Division sorgen wir dafür, dass Ergebnis eine ganze Zahl ist
+    function makeTask(range, opChoice){
+      const ops = ['+','-','*','/'];
+      const op = opChoice === 'all' ? ops[randInt(4)] : opChoice;
+
+      let a, b;
+      if(op === '/'){
+        // damit ganzzahlige Division: wähle q und b, setze a = q*b
+        b = Math.max(1, randInt(range) || 1); // Divisor nicht 0
+        const q = Math.max(1, randInt(Math.max(2, Math.floor(range/2))));
+        a = q * b;
+      } else {
+        a = randInt(range + 1);
+        b = randInt(range + 1);
+      }
+
+      const expr = `${a} ${op} ${b}`;
+      // sichere Auswertung ohne eval: handle op
+      let res;
+      switch(op){
+        case '+': res = a + b; break;
+        case '-': res = a - b; break;
+        case '*': res = a * b; break;
+        case '/': res = Math.trunc(a / b); break; // hier Ganzzahlergebnis
+      }
+
+      return {a,b,op,res};
+    }
+
+    // Test starten
+    function startTest(){
+      tasks = [];
+      current = 0;
+      correctCount = 0;
+      summaryArea.innerHTML = '';
+
+      const opChoice = opEl.value;
+      const rangeVal = Number(rangeEl.value);
+
+      for(let i=0;i<TOTAL;i++) tasks.push(makeTask(rangeVal, opChoice));
+
+      startBtn.disabled = true;
+      opEl.disabled = true;
+      rangeEl.disabled = true;
+
+      showTask();
+    }
+
+    // Aufgabe anzeigen
+    function showTask(){
+      if(current >= tasks.length){
+        return showSummary();
+      }
+
+      const t = tasks[current];
+
+      // Accessibility: focus auf Input
+      exerciseEl.innerHTML = `
+        <div class="taskline">Aufgabe ${current+1} / ${TOTAL}</div>
+        <div style="font-size:1.4rem;margin-bottom:8px">${t.a} <strong>${t.op}</strong> ${t.b} =</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="answer" type="number" inputmode="numeric" aria-label="Antwort eingeben" />
+          <button id="okBtn">Prüfen</button>
+        </div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+      `;
+
+      const answerEl = document.getElementById('answer');
+      const okBtn = document.getElementById('okBtn');
+      answerEl.focus();
+
+      // Enter drücken funktioniert
+      answerEl.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') okBtn.click(); });
+
+      okBtn.addEventListener('click', ()=> checkAnswer());
+    }
+
+    // Antwort prüfen
+    function checkAnswer(){
+      const t = tasks[current];
+      const answerEl = document.getElementById('answer');
+      const feedbackEl = document.getElementById('feedback');
+
+      // Wenn leer, ignoriere
+      if(answerEl.value === ''){ feedbackEl.textContent = 'Bitte eine Zahl eingeben.'; feedbackEl.className='feedback'; return; }
+
+      let user = Number(answerEl.value);
+      // Bei Division eventuell runden - wir erwarten Ganzzahl
+      user = Math.trunc(user);
+
+      if(user === t.res){
+        correctCount++;
+        feedbackEl.textContent = 'Richtig!';
+        feedbackEl.className = 'feedback ok';
+      } else {
+        feedbackEl.innerHTML = `Falsch. Richtig wäre: <strong>${t.res}</strong>`;
+        feedbackEl.className = 'feedback err';
+      }
+
+      // kleine Verzögerung, damit Schüler das Feedback sieht
+      current++;
+      // nach 700ms zur nächsten Aufgabe
+      setTimeout(showTask, 700);
+    }
+
+    // Zusammenfassung mit einfacher Grafik (Canvas)
+    function showSummary(){
+      startBtn.disabled = false;
+      opEl.disabled = false;
+      rangeEl.disabled = false;
+
+      const wrong = TOTAL - correctCount;
+
+      summaryArea.innerHTML = `
+        <div class="card" style="margin-top:12px;padding:14px">
+          <h3>Ergebnis</h3>
+          <div class="summary">
+            <div>
+              <p><strong>Richtig:</strong> ${correctCount}</p>
+              <p><strong>Falsch:</strong> ${wrong}</p>
+            </div>
+            <canvas id="chart" width="300" height="180" aria-label="Ergebnisdiagramm"></canvas>
+          </div>
+        </div>
+      `;
+
+      drawChart(correctCount, wrong);
+
+      // Option: Ergebnisse nur lokal (sessionStorage) speichern — aus DSGVO-Gründen standardmäßig aus.
+      // Wenn du es möchtest, kannst du folgende Zeile einkommentieren. Achtung: sessionStorage ist lokal
+      // sessionStorage.setItem('lastResult', JSON.stringify({date: Date.now(), correct: correctCount, wrong}));
+    }
+
+    // Zeichne ein einfaches Balkendiagramm
+    function drawChart(ok, bad){
+      const c = document.getElementById('chart');
+      if(!c) return;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,c.width,c.height);
+
+      const total = ok + bad || 1;
+      const okH = Math.round((ok/total) * 120);
+      const badH = Math.round((bad/total) * 120);
+
+      // Balken Hintergrund
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,c.width,c.height);
+
+      // OK Balken
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(40, c.height - okH - 30, 80, okH);
+      ctx.fillStyle = '#000';
+      ctx.fillText(`Richtig: ${ok}`, 40, c.height - okH - 35);
+
+      // Falsch Balken
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(180, c.height - badH - 30, 80, badH);
+      ctx.fillStyle = '#000';
+      ctx.fillText(`Falsch: ${bad}`, 180, c.height - badH - 35);
+
+      // Legende / Achse
+      ctx.fillStyle = '#6b7280';
+      ctx.fillText(`${ok + bad} Aufgaben`, 120, c.height - 8);
+    }
+
+    // Buttons
+    startBtn.addEventListener('click', startTest);
+    restartBtn.addEventListener('click', ()=>{
+      // Neu initialisieren: leert UI
+      tasks = []; current = 0; correctCount = 0; startBtn.disabled=false; opEl.disabled=false; rangeEl.disabled=false;
+      exerciseEl.innerHTML = '';
+      summaryArea.innerHTML = '';
+    });
+
+    // Kleine Verbesserung: wenn Datei lokal geöffnet wird, Fokus auf Start
+    startBtn.focus();
+
+  </script>
+</body>
+</html>

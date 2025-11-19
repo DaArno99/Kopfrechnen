@@ -21,7 +21,8 @@ body { margin: 0; background: var(--bg); color: var(--text); display: flex; just
 .container { max-width: 900px; width: 100%; }
 header { text-align: center; margin-bottom: 24px; }
 h1 { font-size: 2.2rem; margin-bottom: 6px; color: var(--text); }
-.subtitle { font-size: 1.1rem; color: var(--muted); }
+.subtitle { font-size: 1.1rem; color: var(--muted); margin-bottom: 6px; }
+.version { font-size: 0.9rem; color: var(--muted); }
 .card { background: var(--card); border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); padding: 24px; transition: transform 0.2s; }
 .card.bounce { animation: bounce 0.5s; }
 @keyframes bounce { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
@@ -53,6 +54,7 @@ footer { margin-top: 20px; font-size: 0.9rem; color: var(--muted); text-align: c
 <header>
 <h1>Kopfrechnen – Little Professor</h1>
 <div class="subtitle">Wähle Operation, Zahlenraum & Timer, löse 20 Aufgaben!</div>
+<div class="version">Version 1.2</div>
 </header>
 <section class="card" id="card">
 <div class="controls">
@@ -97,11 +99,48 @@ const timerBar=document.querySelector('.timer-bar');
 const timerFill=document.getElementById('timerFill');
 const cardEl=document.getElementById('card');
 function randInt(n){return Math.floor(Math.random()*n);}
-function makeTask(range,opChoice){const ops=['+','-','*','/'];const op=opChoice==='all'?ops[randInt(4)]:opChoice;let a,b,res;if(op==='/' ){b=Math.max(1,randInt(range)||1);const q=Math.max(1,randInt(Math.max(2,Math.floor(range/2))));a=q*b;} else {a=randInt(range+1);b=randInt(range+1);} switch(op){case '+': res=a+b; break; case '-': res=a-b; break; case '*': res=a*b; break; case '/': res=Math.trunc(a/b); break;} return {a,b,op,res};}
-function startTest(){clearInterval(timerId); tasks=[],current=0,correctCount=0; summaryArea.innerHTML=''; const opChoice=opEl.value, rangeVal=Number(rangeEl.value), timerVal=Number(timerEl.value); for(let i=0;i<TOTAL;i++) tasks.push(makeTask(rangeVal,opChoice)); startBtn.disabled=true; opEl.disabled=true; rangeEl.disabled=true; timerEl.disabled=true; if(timerVal>0){timeLeft=timerVal; timerBar.style.display='block'; updateTimerBar(); timerId=setInterval(countDown,1000);} else timerBar.style.display='none'; showTask();}
+function makeTask(range,opChoice){
+    const ops=['+','-','*','/'];
+    const op=opChoice==='all'?ops[randInt(4)]:opChoice;
+    let a,b,res;
+    switch(op){
+        case '+':
+            a=randInt(range+1);
+            b=randInt(range+1);
+            res=a+b;
+            break;
+        case '-':
+            a=randInt(range+1);
+            b=randInt(a+1); // b <= a → Ergebnis ≥ 0
+            res=a-b;
+            break;
+        case '*':
+            a=randInt(range+1);
+            b=randInt(range+1);
+            res=a*b;
+            break;
+        case '/':
+            b=randInt(range)+1; // nie 0
+            const q=randInt(Math.max(1,Math.floor(range/b)))+1;
+            a=b*q; // a / b = q → ganzzahlig
+            res=q;
+            break;
+    }
+    return {a,b,op,res};
+}
+function startTest(){
+    clearInterval(timerId); tasks=[],current=0,correctCount=0; summaryArea.innerHTML='';
+    const opChoice=opEl.value, rangeVal=Number(rangeEl.value), timerVal=Number(timerEl.value);
+    for(let i=0;i<TOTAL;i++) tasks.push(makeTask(rangeVal,opChoice));
+    startBtn.disabled=true; opEl.disabled=true; rangeEl.disabled=true; timerEl.disabled=true;
+    if(timerVal>0){timeLeft=timerVal; timerBar.style.display='block'; updateTimerBar(); timerId=setInterval(countDown,1000);} else timerBar.style.display='none';
+    showTask();
+}
 function countDown(){timeLeft--; if(timeLeft<=0){clearInterval(timerId); showSummary();} updateTimerBar();}
 function updateTimerBar(){const pct=Math.max(0,(timeLeft/Number(timerEl.value))*100); timerFill.style.width=pct+'%';}
-function showTask(){if(current>=tasks.length) return showSummary(); const t=tasks[current]; exerciseEl.innerHTML=`<div class="taskline">Aufgabe ${current+1} / ${TOTAL}</div><div class="task">${t.a} ${t.op} ${t.b} =</div><div style="display:flex;gap:16px;justify-content:center;align-items:center"><input id="answer" type="number" inputmode="numeric" aria-label="Antwort eingeben" /><button id="okBtn" class="primary">Prüfen</button></div><div id="feedback" class="feedback" role="status" aria-live="polite"></div>`; const answerEl=document.getElementById('answer'); const okBtn=document.getElementById('okBtn'); answerEl.focus(); answerEl.addEventListener('keydown',(e)=>{if(e.key==='Enter') okBtn.click();}); okBtn.addEventListener('click',()=>checkAnswer());}
+function showTask(){if(current>=tasks.length) return showSummary(); const t=tasks[current];
+exerciseEl.innerHTML=`<div class="taskline">Aufgabe ${current+1} / ${TOTAL}</div><div class="task">${t.a} ${t.op} ${t.b} =</div><div style="display:flex;gap:16px;justify-content:center;align-items:center"><input id="answer" type="number" inputmode="numeric" aria-label="Antwort eingeben" /><button id="okBtn" class="primary">Prüfen</button></div><div id="feedback" class="feedback" role="status" aria-live="polite"></div>`;
+const answerEl=document.getElementById('answer'); const okBtn=document.getElementById('okBtn'); answerEl.focus(); answerEl.addEventListener('keydown',(e)=>{if(e.key==='Enter') okBtn.click();}); okBtn.addEventListener('click',()=>checkAnswer());}
 function checkAnswer(){const t=tasks[current]; const answerEl=document.getElementById('answer'); const feedbackEl=document.getElementById('feedback'); if(answerEl.value===''){feedbackEl.textContent='Bitte eine Zahl eingeben.';feedbackEl.className='feedback'; return;} let user=Math.trunc(Number(answerEl.value)); if(user===t.res){correctCount++; feedbackEl.textContent='Richtig!'; feedbackEl.className='feedback ok'; cardEl.classList.add('bounce'); setTimeout(()=>cardEl.classList.remove('bounce'),500);} else{feedbackEl.innerHTML=`Falsch. Richtig: <strong>${t.res}</strong>`; feedbackEl.className='feedback err'; cardEl.classList.add('bounce'); setTimeout(()=>cardEl.classList.remove('bounce'),500);} current++; setTimeout(showTask,700);}
 function showSummary(){clearInterval(timerId); startBtn.disabled=false; opEl.disabled=false; rangeEl.disabled=false; timerEl.disabled=false; const wrong=TOTAL-correctCount; summaryArea.innerHTML=`<div class="card" style="margin-top:16px;padding:18px;text-align:center"><h3>Ergebnis</h3><div class="summary"><div><p><strong>Richtig:</strong> ${correctCount}</p><p><strong>Falsch:</strong> ${wrong}</p></div><canvas id="chart" width="300" height="180" aria-label="Ergebnisdiagramm"></canvas></div></div>`; drawChart(correctCount, wrong);}
 function drawChart(ok,bad){const c=document.getElementById('chart'); if(!c)return; const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); const total=ok+bad||1; const okH=Math.round((ok/total)*120); const badH=Math.round((bad/total)*120); ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,c.width,c.height); ctx.fillStyle='#43A047'; ctx.fillRect(40,c.height-okH-30,80,okH); ctx.fillStyle='#000'; ctx.fillText(`Richtig: ${ok}`,40,c.height-okH-35); ctx.fillStyle='#E53935'; ctx.fillRect(180,c.height-badH-30,80,badH); ctx.fillStyle='#000'; ctx.fillText(`Falsch: ${bad}`,180,c.height-badH-35); ctx.fillStyle='#6b7280'; ctx.fillText(`${ok+bad} Aufgaben`,120,c.height-8);}

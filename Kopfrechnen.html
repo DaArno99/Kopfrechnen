@@ -1,186 +1,112 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kopfrechnen – Little Professor Style</title>
-  <meta name="description" content="Kindgerechte Kopfrechen-App, 20 Aufgaben, sofortiges Feedback, Zusammenfassung. Läuft lokal im Browser (DSGVO-konform)." />
-
-  <style>
-    :root {
-      --bg: #E0F7FA;
-      --card: #FFFFFF;
-      --accent: #FFB74D;
-      --ok: #43A047;
-      --err: #E53935;
-      --text: #0D47A1;
-      --muted: #6b7280;
-      font-family: 'Comic Sans MS', cursive, sans-serif;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 24px; }
-    .container { max-width: 900px; width: 100%; }
-    header { text-align: center; margin-bottom: 24px; }
-    h1 { font-size: 2.2rem; margin-bottom: 6px; color: var(--text); }
-    .subtitle { font-size: 1.1rem; color: var(--muted); }
-
-    .card { background: var(--card); border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); padding: 24px; }
-
-    .controls { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-bottom: 20px; }
-    select, button { padding: 16px 24px; border-radius: 12px; border: none; font-size: 1.1rem; cursor: pointer; }
-    select { background: #fff; }
-    button.primary { background: var(--accent); color: #fff; transition: 0.2s; }
-    button.primary:hover { background: #fb8c00; }
-    button.secondary { background: #B3E5FC; color: var(--text); }
-
-    .exercise { text-align: center; margin-top: 16px; }
-    .taskline { font-size: 1.3rem; margin-bottom: 8px; }
-    .task { font-size: 3rem; font-weight: bold; color: var(--text); margin-bottom: 12px; }
-    input[type=number] { padding: 16px 20px; border-radius: 12px; border: 2px solid #90CAF9; font-size: 2rem; width: 150px; text-align: center; }
-
-    .feedback { font-size: 1.8rem; font-weight: bold; margin-top: 12px; min-height: 40px; transition: 0.3s; }
-    .feedback.ok { color: var(--ok); }
-    .feedback.err { color: var(--err); }
-
-    .summary { display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
-    canvas { background: #fff; border-radius: 12px; padding: 8px; }
-
-    footer { margin-top: 20px; font-size: 0.9rem; color: var(--muted); text-align: center; }
-
-    @media (max-width: 640px) {
-      input[type=number] { width: 100%; }
-      .controls { flex-direction: column; align-items: center; }
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kopfrechnen – Little Professor Style</title>
+<meta name="description" content="Kindgerechte Kopfrechen-App, 20 Aufgaben, Timer, Fortschrittsanzeige, Feedback, Animationen, DSGVO-konform." />
+<style>
+:root {
+  --bg: #E0F7FA;
+  --card: #FFFFFF;
+  --accent: #FFB74D;
+  --ok: #43A047;
+  --err: #E53935;
+  --text: #0D47A1;
+  --muted: #6b7280;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 24px; }
+.container { max-width: 900px; width: 100%; }
+header { text-align: center; margin-bottom: 24px; }
+h1 { font-size: 2.2rem; margin-bottom: 6px; color: var(--text); }
+.subtitle { font-size: 1.1rem; color: var(--muted); }
+.card { background: var(--card); border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); padding: 24px; transition: transform 0.2s; }
+.card.bounce { animation: bounce 0.5s; }
+@keyframes bounce { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.controls { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-bottom: 20px; }
+select, button { padding: 16px 24px; border-radius: 12px; border: none; font-size: 1.1rem; cursor: pointer; }
+select { background: #fff; }
+button.primary { background: var(--accent); color: #fff; transition: 0.2s; }
+button.primary:hover { background: #fb8c00; }
+button.secondary { background: #B3E5FC; color: var(--text); }
+.exercise { text-align: center; margin-top: 16px; }
+.taskline { font-size: 1.3rem; margin-bottom: 8px; }
+.task { font-size: 3rem; font-weight: bold; color: var(--text); margin-bottom: 12px; transition: 0.3s; }
+input[type=number] { padding: 16px 20px; border-radius: 12px; border: 2px solid #90CAF9; font-size: 2rem; width: 150px; text-align: center; }
+.feedback { font-size: 1.8rem; font-weight: bold; margin-top: 12px; min-height: 40px; transition: 0.3s; }
+.feedback.ok { color: var(--ok); animation: blinkgreen 0.5s; }
+.feedback.err { color: var(--err); animation: blinkred 0.5s; }
+@keyframes blinkgreen { 0% {opacity:0;} 50% {opacity:1;} 100% {opacity:1;} }
+@keyframes blinkred { 0% {opacity:0;} 50% {opacity:1;} 100% {opacity:1;} }
+.summary { display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+canvas { background: #fff; border-radius: 12px; padding: 8px; }
+.timer-bar { width: 100%; height: 24px; background: #B3E5FC; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.timer-fill { height: 100%; width: 100%; background: var(--accent); transition: width 1s linear; }
+footer { margin-top: 20px; font-size: 0.9rem; color: var(--muted); text-align: center; }
+@media (max-width: 640px) { input[type=number] { width: 100%; } .controls { flex-direction: column; align-items: center; } }
+</style>
 </head>
 <body>
-  <main class="container">
-    <header>
-      <h1>Kopfrechnen – Little Professor</h1>
-      <div class="subtitle">Wähle Operation & Zahlenraum, löse 20 Aufgaben!</div>
-    </header>
-
-    <section class="card">
-      <div class="controls">
-        <select id="op" aria-label="Operation wählen">
-          <option value="all">Alles (gemischt)</option>
-          <option value="+">Addition (+)</option>
-          <option value="-">Subtraktion (-)</option>
-          <option value="*">Multiplikation (×)</option>
-          <option value="/">Division (÷)</option>
-        </select>
-        <select id="range" aria-label="Zahlenraum wählen">
-          <option value="100">bis 100</option>
-          <option value="1000">bis 1000</option>
-          <option value="10000">bis 10000</option>
-        </select>
-        <button id="startBtn" class="primary">Start</button>
-        <button id="restartBtn" class="secondary">Neu</button>
-      </div>
-
-      <div id="exercise" class="exercise" aria-live="polite"></div>
-      <div id="summaryArea"></div>
-      <footer>Alles läuft lokal im Browser – DSGVO-freundlich.</footer>
-    </section>
-  </main>
-
-  <script>
-    const TOTAL = 20;
-    let tasks = [], current = 0, correctCount = 0;
-
-    const opEl = document.getElementById('op');
-    const rangeEl = document.getElementById('range');
-    const startBtn = document.getElementById('startBtn');
-    const restartBtn = document.getElementById('restartBtn');
-    const exerciseEl = document.getElementById('exercise');
-    const summaryArea = document.getElementById('summaryArea');
-
-    function randInt(n){ return Math.floor(Math.random()*n); }
-
-    function makeTask(range, opChoice){
-      const ops = ['+','-','*','/'];
-      const op = opChoice === 'all' ? ops[randInt(4)] : opChoice;
-      let a, b;
-      if(op === '/'){
-        b = Math.max(1, randInt(range) || 1);
-        const q = Math.max(1, randInt(Math.max(2, Math.floor(range/2))));
-        a = q * b;
-      } else {
-        a = randInt(range + 1);
-        b = randInt(range + 1);
-      }
-      let res;
-      switch(op){
-        case '+': res=a+b; break;
-        case '-': res=a-b; break;
-        case '*': res=a*b; break;
-        case '/': res=Math.trunc(a/b); break;
-      }
-      return {a,b,op,res};
-    }
-
-    function startTest(){
-      tasks=[], current=0, correctCount=0; summaryArea.innerHTML='';
-      const opChoice=opEl.value, rangeVal=Number(rangeEl.value);
-      for(let i=0;i<TOTAL;i++) tasks.push(makeTask(rangeVal, opChoice));
-      startBtn.disabled=true; opEl.disabled=true; rangeEl.disabled=true;
-      showTask();
-    }
-
-    function showTask(){
-      if(current>=tasks.length) return showSummary();
-      const t=tasks[current];
-      exerciseEl.innerHTML=`<div class="taskline">Aufgabe ${current+1} / ${TOTAL}</div>
-        <div class="task">${t.a} ${t.op} ${t.b} =</div>
-        <div style="display:flex;gap:16px;justify-content:center;align-items:center">
-          <input id="answer" type="number" inputmode="numeric" aria-label="Antwort eingeben" />
-          <button id="okBtn" class="primary">Prüfen</button>
-        </div>
-        <div id="feedback" class="feedback" role="status" aria-live="polite"></div>`;
-      const answerEl=document.getElementById('answer');
-      const okBtn=document.getElementById('okBtn');
-      answerEl.focus();
-      answerEl.addEventListener('keydown',(e)=>{if(e.key==='Enter') okBtn.click();});
-      okBtn.addEventListener('click',()=>checkAnswer());
-    }
-
-    function checkAnswer(){
-      const t=tasks[current];
-      const answerEl=document.getElementById('answer');
-      const feedbackEl=document.getElementById('feedback');
-      if(answerEl.value===''){feedbackEl.textContent='Bitte eine Zahl eingeben.';feedbackEl.className='feedback';return;}
-      let user=Math.trunc(Number(answerEl.value));
-      if(user===t.res){correctCount++;feedbackEl.textContent='Richtig!';feedbackEl.className='feedback ok';}
-      else{feedbackEl.innerHTML=`Falsch. Richtig: <strong>${t.res}</strong>`;feedbackEl.className='feedback err';}
-      current++; setTimeout(showTask,700);
-    }
-
-    function showSummary(){
-      startBtn.disabled=false; opEl.disabled=false; rangeEl.disabled=false;
-      const wrong=TOTAL-correctCount;
-      summaryArea.innerHTML=`<div class="card" style="margin-top:16px;padding:18px;text-align:center">
-        <h3>Ergebnis</h3>
-        <div class="summary">
-          <div><p><strong>Richtig:</strong> ${correctCount}</p><p><strong>Falsch:</strong> ${wrong}</p></div>
-          <canvas id="chart" width="300" height="180" aria-label="Ergebnisdiagramm"></canvas>
-        </div>
-      </div>`;
-      drawChart(correctCount, wrong);
-    }
-
-    function drawChart(ok,bad){
-      const c=document.getElementById('chart'); if(!c)return;
-      const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
-      const total=ok+bad||1; const okH=Math.round((ok/total)*120); const badH=Math.round((bad/total)*120);
-      ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,c.width,c.height);
-      ctx.fillStyle='#43A047'; ctx.fillRect(40,c.height-okH-30,80,okH); ctx.fillStyle='#000'; ctx.fillText(`Richtig: ${ok}`,40,c.height-okH-35);
-      ctx.fillStyle='#E53935'; ctx.fillRect(180,c.height-badH-30,80,badH); ctx.fillStyle='#000'; ctx.fillText(`Falsch: ${bad}`,180,c.height-badH-35);
-      ctx.fillStyle='#6b7280'; ctx.fillText(`${ok+bad} Aufgaben`,120,c.height-8);
-    }
-
-    startBtn.addEventListener('click',startTest);
-    restartBtn.addEventListener('click',()=>{tasks=[];current=0;correctCount=0;startBtn.disabled=false;opEl.disabled=false;rangeEl.disabled=false;exerciseEl.innerHTML='';summaryArea.innerHTML='';});
-    startBtn.focus();
-  </script>
+<main class="container">
+<header>
+<h1>Kopfrechnen – Little Professor</h1>
+<div class="subtitle">Wähle Operation, Zahlenraum & Timer, löse 20 Aufgaben!</div>
+</header>
+<section class="card" id="card">
+<div class="controls">
+<select id="op" aria-label="Operation wählen">
+<option value="all">Alles ➕➖✖️➗</option>
+<option value="+">Addition (+)</option>
+<option value="-">Subtraktion (-)</option>
+<option value="*">Multiplikation (×)</option>
+<option value="/">Division (÷)</option>
+</select>
+<select id="range" aria-label="Zahlenraum wählen">
+<option value="100">bis 100</option>
+<option value="1000">bis 1000</option>
+<option value="10000">bis 10000</option>
+</select>
+<select id="timer" aria-label="Timer wählen">
+<option value="0">Kein Timer</option>
+<option value="120">2 Minuten</option>
+<option value="300">5 Minuten</option>
+<option value="600">10 Minuten</option>
+</select>
+<button id="startBtn" class="primary">Start</button>
+<button id="restartBtn" class="secondary">Neu</button>
+</div>
+<div class="timer-bar" style="display:none;"><div id="timerFill" class="timer-fill"></div></div>
+<div id="exercise" class="exercise" aria-live="polite"></div>
+<div id="summaryArea"></div>
+<footer>Alles läuft lokal im Browser – DSGVO-freundlich.</footer>
+</section>
+</main>
+<script>
+const TOTAL=20;
+let tasks=[],current=0,correctCount=0,timerId=null,timeLeft=0;
+const opEl=document.getElementById('op');
+const rangeEl=document.getElementById('range');
+const timerEl=document.getElementById('timer');
+const startBtn=document.getElementById('startBtn');
+const restartBtn=document.getElementById('restartBtn');
+const exerciseEl=document.getElementById('exercise');
+const summaryArea=document.getElementById('summaryArea');
+const timerBar=document.querySelector('.timer-bar');
+const timerFill=document.getElementById('timerFill');
+const cardEl=document.getElementById('card');
+function randInt(n){return Math.floor(Math.random()*n);}
+function makeTask(range,opChoice){const ops=['+','-','*','/'];const op=opChoice==='all'?ops[randInt(4)]:opChoice;let a,b,res;if(op==='/' ){b=Math.max(1,randInt(range)||1);const q=Math.max(1,randInt(Math.max(2,Math.floor(range/2))));a=q*b;} else {a=randInt(range+1);b=randInt(range+1);} switch(op){case '+': res=a+b; break; case '-': res=a-b; break; case '*': res=a*b; break; case '/': res=Math.trunc(a/b); break;} return {a,b,op,res};}
+function startTest(){clearInterval(timerId); tasks=[],current=0,correctCount=0; summaryArea.innerHTML=''; const opChoice=opEl.value, rangeVal=Number(rangeEl.value), timerVal=Number(timerEl.value); for(let i=0;i<TOTAL;i++) tasks.push(makeTask(rangeVal,opChoice)); startBtn.disabled=true; opEl.disabled=true; rangeEl.disabled=true; timerEl.disabled=true; if(timerVal>0){timeLeft=timerVal; timerBar.style.display='block'; updateTimerBar(); timerId=setInterval(countDown,1000);} else timerBar.style.display='none'; showTask();}
+function countDown(){timeLeft--; if(timeLeft<=0){clearInterval(timerId); showSummary();} updateTimerBar();}
+function updateTimerBar(){const pct=Math.max(0,(timeLeft/Number(timerEl.value))*100); timerFill.style.width=pct+'%';}
+function showTask(){if(current>=tasks.length) return showSummary(); const t=tasks[current]; exerciseEl.innerHTML=`<div class="taskline">Aufgabe ${current+1} / ${TOTAL}</div><div class="task">${t.a} ${t.op} ${t.b} =</div><div style="display:flex;gap:16px;justify-content:center;align-items:center"><input id="answer" type="number" inputmode="numeric" aria-label="Antwort eingeben" /><button id="okBtn" class="primary">Prüfen</button></div><div id="feedback" class="feedback" role="status" aria-live="polite"></div>`; const answerEl=document.getElementById('answer'); const okBtn=document.getElementById('okBtn'); answerEl.focus(); answerEl.addEventListener('keydown',(e)=>{if(e.key==='Enter') okBtn.click();}); okBtn.addEventListener('click',()=>checkAnswer());}
+function checkAnswer(){const t=tasks[current]; const answerEl=document.getElementById('answer'); const feedbackEl=document.getElementById('feedback'); if(answerEl.value===''){feedbackEl.textContent='Bitte eine Zahl eingeben.';feedbackEl.className='feedback'; return;} let user=Math.trunc(Number(answerEl.value)); if(user===t.res){correctCount++; feedbackEl.textContent='Richtig!'; feedbackEl.className='feedback ok'; cardEl.classList.add('bounce'); setTimeout(()=>cardEl.classList.remove('bounce'),500);} else{feedbackEl.innerHTML=`Falsch. Richtig: <strong>${t.res}</strong>`; feedbackEl.className='feedback err'; cardEl.classList.add('bounce'); setTimeout(()=>cardEl.classList.remove('bounce'),500);} current++; setTimeout(showTask,700);}
+function showSummary(){clearInterval(timerId); startBtn.disabled=false; opEl.disabled=false; rangeEl.disabled=false; timerEl.disabled=false; const wrong=TOTAL-correctCount; summaryArea.innerHTML=`<div class="card" style="margin-top:16px;padding:18px;text-align:center"><h3>Ergebnis</h3><div class="summary"><div><p><strong>Richtig:</strong> ${correctCount}</p><p><strong>Falsch:</strong> ${wrong}</p></div><canvas id="chart" width="300" height="180" aria-label="Ergebnisdiagramm"></canvas></div></div>`; drawChart(correctCount, wrong);}
+function drawChart(ok,bad){const c=document.getElementById('chart'); if(!c)return; const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); const total=ok+bad||1; const okH=Math.round((ok/total)*120); const badH=Math.round((bad/total)*120); ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,c.width,c.height); ctx.fillStyle='#43A047'; ctx.fillRect(40,c.height-okH-30,80,okH); ctx.fillStyle='#000'; ctx.fillText(`Richtig: ${ok}`,40,c.height-okH-35); ctx.fillStyle='#E53935'; ctx.fillRect(180,c.height-badH-30,80,badH); ctx.fillStyle='#000'; ctx.fillText(`Falsch: ${bad}`,180,c.height-badH-35); ctx.fillStyle='#6b7280'; ctx.fillText(`${ok+bad} Aufgaben`,120,c.height-8);}
+startBtn.addEventListener('click',startTest);
+restartBtn.addEventListener('click',()=>{clearInterval(timerId); tasks=[];current=0;correctCount=0;startBtn.disabled=false;opEl.disabled=false;rangeEl.disabled=false;timerEl.disabled=false; exerciseEl.innerHTML='';summaryArea.innerHTML=''; timerBar.style.display='none';}); startBtn.focus();
+</script>
 </body>
 </html>

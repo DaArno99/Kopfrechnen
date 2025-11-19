@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Kopfrechnen – Little Professor Style</title>
-<meta name="description" content="Kindgerechte Kopfrechen-App, 20 Aufgaben, Timer, Fortschrittsanzeige, Feedback, Animationen, DSGVO-konform." />
+<meta name="description" content="Kindgerechte Kopfrechen-App, 20 Aufgaben, Timer, Schwierigkeitsstufen, Fortschrittsanzeige, Feedback, Animationen, DSGVO-konform." />
 <style>
 :root {
   --bg: #E0F7FA;
@@ -53,22 +53,24 @@ footer { margin-top: 20px; font-size: 0.9rem; color: var(--muted); text-align: c
 <main class="container">
 <header>
 <h1>Kopfrechnen – Little Professor</h1>
-<div class="subtitle">Wähle Operation, Zahlenraum & Timer, löse 20 Aufgaben!</div>
-<div class="version">Version 1.2</div>
+<div class="subtitle">Wähle Rechenart, Schwierigkeitsstufe & Timer, löse 20 Aufgaben!</div>
+<div class="version">Version 1.3</div>
 </header>
 <section class="card" id="card">
 <div class="controls">
-<select id="op" aria-label="Operation wählen">
+<select id="op" aria-label="Rechenart wählen">
 <option value="all">Alles ➕➖✖️➗</option>
 <option value="+">Addition (+)</option>
 <option value="-">Subtraktion (-)</option>
 <option value="*">Multiplikation (×)</option>
 <option value="/">Division (÷)</option>
 </select>
-<select id="range" aria-label="Zahlenraum wählen">
-<option value="100">bis 100</option>
-<option value="1000">bis 1000</option>
-<option value="10000">bis 10000</option>
+<select id="level" aria-label="Schwierigkeitsstufe wählen">
+<option value="1">Stufe 1</option>
+<option value="2">Stufe 2</option>
+<option value="3">Stufe 3</option>
+<option value="4">Stufe 4</option>
+<option value="5">Stufe 5</option>
 </select>
 <select id="timer" aria-label="Timer wählen">
 <option value="0">Kein Timer</option>
@@ -89,7 +91,7 @@ footer { margin-top: 20px; font-size: 0.9rem; color: var(--muted); text-align: c
 const TOTAL=20;
 let tasks=[],current=0,correctCount=0,timerId=null,timeLeft=0;
 const opEl=document.getElementById('op');
-const rangeEl=document.getElementById('range');
+const levelEl=document.getElementById('level');
 const timerEl=document.getElementById('timer');
 const startBtn=document.getElementById('startBtn');
 const restartBtn=document.getElementById('restartBtn');
@@ -99,53 +101,66 @@ const timerBar=document.querySelector('.timer-bar');
 const timerFill=document.getElementById('timerFill');
 const cardEl=document.getElementById('card');
 function randInt(n){return Math.floor(Math.random()*n);}
-function makeTask(range,opChoice){
+
+function makeTask(level, opChoice){
+    let maxRange, maxMul;
+    switch(level){
+        case '1': maxRange=20; maxMul=5; break;
+        case '2': maxRange=50; maxMul=10; break;
+        case '3': maxRange=100; maxMul=15; break;
+        case '4': maxRange=500; maxMul=20; break;
+        case '5': maxRange=1000; maxMul=50; break;
+    }
+
     const ops=['+','-','*','/'];
-    const op=opChoice==='all'?ops[randInt(4)]:opChoice;
+    const op=opChoice==='all'?ops[randInt(ops.length)]:opChoice;
     let a,b,res;
+
     switch(op){
-        case '+':
-            a=randInt(range+1);
-            b=randInt(range+1);
-            res=a+b;
-            break;
-        case '-':
-            a=randInt(range+1);
-            b=randInt(a+1); // b <= a → Ergebnis ≥ 0
-            res=a-b;
-            break;
-        case '*':
-            a=randInt(range+1);
-            b=randInt(range+1);
-            res=a*b;
-            break;
-        case '/':
-            b=randInt(range)+1; // nie 0
-            const q=randInt(Math.max(1,Math.floor(range/b)))+1;
-            a=b*q; // a / b = q → ganzzahlig
-            res=q;
-            break;
+        case '+': a=randInt(maxRange+1); b=randInt(maxRange+1); res=a+b; break;
+        case '-': a=randInt(maxRange+1); b=randInt(a+1); res=a-b; break;
+        case '*': a=randInt(maxMul+1); b=randInt(maxMul+1); res=a*b; break;
+        case '/': b=randInt(maxMul)+1; const q=randInt(maxMul)+1; a=b*q; res=q; break;
     }
     return {a,b,op,res};
 }
+
 function startTest(){
     clearInterval(timerId); tasks=[],current=0,correctCount=0; summaryArea.innerHTML='';
-    const opChoice=opEl.value, rangeVal=Number(rangeEl.value), timerVal=Number(timerEl.value);
-    for(let i=0;i<TOTAL;i++) tasks.push(makeTask(rangeVal,opChoice));
-    startBtn.disabled=true; opEl.disabled=true; rangeEl.disabled=true; timerEl.disabled=true;
+    const opChoice=opEl.value, levelVal=levelEl.value, timerVal=Number(timerEl.value);
+    for(let i=0;i<TOTAL;i++) tasks.push(makeTask(levelVal,opChoice));
+    startBtn.disabled=true; opEl.disabled=true; levelEl.disabled=true; timerEl.disabled=true;
     if(timerVal>0){timeLeft=timerVal; timerBar.style.display='block'; updateTimerBar(); timerId=setInterval(countDown,1000);} else timerBar.style.display='none';
     showTask();
 }
+
 function countDown(){timeLeft--; if(timeLeft<=0){clearInterval(timerId); showSummary();} updateTimerBar();}
 function updateTimerBar(){const pct=Math.max(0,(timeLeft/Number(timerEl.value))*100); timerFill.style.width=pct+'%';}
+
 function showTask(){if(current>=tasks.length) return showSummary(); const t=tasks[current];
 exerciseEl.innerHTML=`<div class="taskline">Aufgabe ${current+1} / ${TOTAL}</div><div class="task">${t.a} ${t.op} ${t.b} =</div><div style="display:flex;gap:16px;justify-content:center;align-items:center"><input id="answer" type="number" inputmode="numeric" aria-label="Antwort eingeben" /><button id="okBtn" class="primary">Prüfen</button></div><div id="feedback" class="feedback" role="status" aria-live="polite"></div>`;
 const answerEl=document.getElementById('answer'); const okBtn=document.getElementById('okBtn'); answerEl.focus(); answerEl.addEventListener('keydown',(e)=>{if(e.key==='Enter') okBtn.click();}); okBtn.addEventListener('click',()=>checkAnswer());}
+
 function checkAnswer(){const t=tasks[current]; const answerEl=document.getElementById('answer'); const feedbackEl=document.getElementById('feedback'); if(answerEl.value===''){feedbackEl.textContent='Bitte eine Zahl eingeben.';feedbackEl.className='feedback'; return;} let user=Math.trunc(Number(answerEl.value)); if(user===t.res){correctCount++; feedbackEl.textContent='Richtig!'; feedbackEl.className='feedback ok'; cardEl.classList.add('bounce'); setTimeout(()=>cardEl.classList.remove('bounce'),500);} else{feedbackEl.innerHTML=`Falsch. Richtig: <strong>${t.res}</strong>`; feedbackEl.className='feedback err'; cardEl.classList.add('bounce'); setTimeout(()=>cardEl.classList.remove('bounce'),500);} current++; setTimeout(showTask,700);}
-function showSummary(){clearInterval(timerId); startBtn.disabled=false; opEl.disabled=false; rangeEl.disabled=false; timerEl.disabled=false; const wrong=TOTAL-correctCount; summaryArea.innerHTML=`<div class="card" style="margin-top:16px;padding:18px;text-align:center"><h3>Ergebnis</h3><div class="summary"><div><p><strong>Richtig:</strong> ${correctCount}</p><p><strong>Falsch:</strong> ${wrong}</p></div><canvas id="chart" width="300" height="180" aria-label="Ergebnisdiagramm"></canvas></div></div>`; drawChart(correctCount, wrong);}
+
+function showSummary(){clearInterval(timerId); startBtn.disabled=false; opEl.disabled=false; levelEl.disabled=false; timerEl.disabled=false; const wrong=TOTAL-correctCount;
+summaryArea.innerHTML=`<div class="card" style="margin-top:16px;padding:18px;text-align:center"><h3>Ergebnis</h3><div class="summary"><div><p><strong>Richtig:</strong> ${correctCount}</p><p><strong>Falsch:</strong> ${wrong}</p></div><canvas id="chart" width="300" height="180" aria-label="Ergebnisdiagramm"></canvas></div></div>`;
+drawChart(correctCount, wrong); showTip(Number(levelEl.value));}
+
 function drawChart(ok,bad){const c=document.getElementById('chart'); if(!c)return; const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); const total=ok+bad||1; const okH=Math.round((ok/total)*120); const badH=Math.round((bad/total)*120); ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,c.width,c.height); ctx.fillStyle='#43A047'; ctx.fillRect(40,c.height-okH-30,80,okH); ctx.fillStyle='#000'; ctx.fillText(`Richtig: ${ok}`,40,c.height-okH-35); ctx.fillStyle='#E53935'; ctx.fillRect(180,c.height-badH-30,80,badH); ctx.fillStyle='#000'; ctx.fillText(`Falsch: ${bad}`,180,c.height-badH-35); ctx.fillStyle='#6b7280'; ctx.fillText(`${ok+bad} Aufgaben`,120,c.height-8);}
+
+function showTip(level) {
+    const successRate = correctCount / TOTAL;
+    let tip = '';
+    if(level < 5 && successRate >= 0.8) tip = 'Super! Du kannst jetzt die nächste Schwierigkeitsstufe ausprobieren ✅';
+    else if(level > 1 && successRate < 0.8) tip = 'Kein Problem! Versuche nochmal die Stufe darunter 🔽';
+    else if(level === 5 && successRate >= 0.8) tip = 'Glückwunsch! Du hast die höchste Schwierigkeitsstufe gut gemeistert 🎉';
+    else if(level === 1 && successRate < 0.8) tip = 'Keine Sorge! Übe nochmal diese Stufe, dann bist du bald fit 👍';
+    if(tip){ const tipEl=document.createElement('p'); tipEl.style.marginTop='12px'; tipEl.style.fontSize='1.2rem'; tipEl.style.color='#0D47A1'; tipEl.textContent=tip; summaryArea.appendChild(tipEl);}
+}
+
 startBtn.addEventListener('click',startTest);
-restartBtn.addEventListener('click',()=>{clearInterval(timerId); tasks=[];current=0;correctCount=0;startBtn.disabled=false;opEl.disabled=false;rangeEl.disabled=false;timerEl.disabled=false; exerciseEl.innerHTML='';summaryArea.innerHTML=''; timerBar.style.display='none';}); startBtn.focus();
+restartBtn.addEventListener('click',()=>{clearInterval(timerId); tasks=[];current=0;correctCount=0;startBtn.disabled=false;opEl.disabled=false;levelEl.disabled=false;timerEl.disabled=false; exerciseEl.innerHTML='';summaryArea.innerHTML=''; timerBar.style.display='none';}); startBtn.focus();
 </script>
 </body>
 </html>
